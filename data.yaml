@@ -1,0 +1,20 @@
+names:
+- Automatic Rifle
+- Bazooka
+- Grenade Launcher
+- Handgun
+- Knife
+- SMG
+- Shotgun
+- Sniper
+- Sword
+nc: 9
+roboflow:
+  license: CC BY 4.0
+  project: weapon-detection-zvtab
+  url: https://universe.roboflow.com/weapon-b3vyl/weapon-detection-zvtab/dataset/1
+  version: 1
+  workspace: weapon-b3vyl
+test: /home/vix/Desktop/Testing/weapon-detection/test/images
+train: /home/vix/Desktop/Testing/weapon-detection/train/images
+val: /home/vix/Desktop/Testing/weapon-detection/valid/images

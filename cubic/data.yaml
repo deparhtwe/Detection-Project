@@ -1,0 +1,12 @@
+names:
+- cubic
+nc: 1
+roboflow:
+  license: CC BY 4.0
+  project: cubic-uu88d
+  url: https://universe.roboflow.com/weapon-b3vyl/cubic-uu88d/dataset/4
+  version: 4
+  workspace: weapon-b3vyl
+test: /home/vix/Desktop/Testing/cubic/test/images
+train: /home/vix/Desktop/Testing/cubic/train/images
+val: /home/vix/Desktop/Testing/cubic/valid/images

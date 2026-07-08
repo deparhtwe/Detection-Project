@@ -1,0 +1,13 @@
+names:
+- fight
+- nofight
+nc: 2
+roboflow:
+  license: CC BY 4.0
+  project: fight-k9buj-z9coy
+  url: https://universe.roboflow.com/weapon-b3vyl/fight-k9buj-z9coy/dataset/2
+  version: 2
+  workspace: weapon-b3vyl
+test: /home/vix/Desktop/Testing/fight/test/images
+train: /home/vix/Desktop/Testing/fight/train/images
+val: /home/vix/Desktop/Testing/fight/valid/images

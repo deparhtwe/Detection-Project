@@ -1,0 +1,11 @@
+# Camera, image display, and saved-frame/gallery utilities.
+opencv-python>=4.8.0
+
+# YOLO model training, prediction, and the `yolo` CLI.
+ultralytics>=8.0.0
+
+# Roboflow dataset download/export helper used by the training workflow.
+roboflow>=1.1.0
+
+# Optional PostgreSQL storage for detection-history images and metadata.
+psycopg[binary]>=3.1.0

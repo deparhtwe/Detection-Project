@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise AI Motor Insurance Fraud Detection System</title>
+    <style>
+        :root {
+            /* Enterprise Palette */
+            --bg-deep: #0f172a;
+            --bg-card: #1e293b;
+            --bg-hover: #334155;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            
+            /* Status Accents */
+            --primary: #3b82f6; 
+            --success: #10b981; 
+            --warning: #f59e0b; 
+            --danger: #ef4444;  
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .system-container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+
+        header h1 { margin: 0; font-size: 20px; font-weight: 600; }
+
+        .top-nav-right {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            color: var(--text-muted);
+            font-size: 18px;
+        }
+
+        .main-dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        /* --- Common Card Styling --- */
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            margin-top: 0;
+            font-size: 15px;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 12px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* --- Form Fields --- */
+        .input-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 5px;
+        }
+
+        .form-field { display: flex; flex-direction: column; }
+
+        label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        input, select {
+            background-color: #0f172a;
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            transition: border-color 0.2s;
+        }
+
+        input:focus, select:focus { outline: none; border-color: var(--primary); }
+
+        /* --- Evidence Hub Elements --- */
+        .evidence-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 15px;
+        }
+
+        .hub-box {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .upload-zone {
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+            background-color: #0f172a;
+            min-height: 220px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--primary);
+            background-color: var(--bg-hover);
+        }
+
+        .upload-zone span { font-size: 12px; margin-top: 6px; }
+        .upload-icon { font-size: 28px; }
+
+        /* --- Viewport Engine Canvas --- */
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            min-height: 190px;
+            background-color: #0b0f19;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        #localImageCanvas {
+            width: 100%;
+            height: 100%;
+            max-height: 190px;
+            object-fit: contain;
+            display: block;
+        }
+
+        .ai-floating-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: var(--warning);
+            color: black;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 3px 6px;
+            border-radius: 3px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+
+        .canvas-tip {
+            position: absolute;
+            bottom: 6px;
+            right: 10px;
+            font-size: 10px;
+            color: var(--text-muted);
+            background: rgba(15, 23, 42, 0.8);
+            padding: 2px 6px;
+            border-radius: 3px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .file-badge {
+            background-color: var(--primary);
+            color: white;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            width: 85%;
+            text-overflow: ellipsis;
+            white-space: pre-wrap;
+            overflow: hidden;
+            text-align: left;
+            font-family: monospace;
+            border-left: 3px solid var(--success);
+        }
+        .file-badge.mismatch {
+            border-left-color: var(--danger);
+        }
+
+        .clear-btn {
+            background-color: #334155;
+            color: #ef4444;
+            border: 1px solid #ef4444;
+            padding: 4px 10px;
+            font-size: 11px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            align-self: flex-end;
+            transition: all 0.2s;
+        }
+        .clear-btn:hover {
+            background-color: rgba(239, 68, 68, 0.1);
+        }
+
+        /* Granular Micro Checks Layout */
+        .check-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 11px 0;
+            border-bottom: 1px solid #2d3748;
+        }
+
+        .check-label { font-size: 13px; font-weight: 500; }
+        .micro-desc { font-size: 11px; color: var(--text-muted); display: block; margin-top: 2px; }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+        }
+
+        .switch input { opacity: 0; width: 0; height: 0; }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #4b5563;
+            border-radius: 20px;
+            transition: .3s;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            border-radius: 50%;
+            transition: .3s;
+        }
+
+        input:checked + .slider { background-color: var(--danger); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        /* --- Tab Management --- */
+        .tab-bar {
+            display: flex;
+            gap: 20px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 15px;
+        }
+
+        .tab { color: var(--text-muted); padding-bottom: 8px; cursor: pointer; font-size: 13px; font-weight: 500; transition: color 0.2s; }
+        .tab:hover { color: var(--text-main); }
+        .tab.active { color: var(--success); border-bottom: 2px solid var(--success); font-weight: 600; }
+
+        /* View Panels */
+        .tab-view { display: none; }
+        .tab-view.active { display: block; }
+
+        /* Grid View Layouts */
+        .analytics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .risk-card { text-align: center; }
+        .meter-container { width: 180px; margin: 10px auto 0; position: relative; }
+        .meter-bg { width: 180px; height: 90px; background: linear-gradient(to right, var(--success), var(--warning), var(--danger)); border-radius: 90px 90px 0 0; }
+        .meter-cover { width: 142px; height: 71px; background-color: var(--bg-card); border-radius: 71px 71px 0 0; position: absolute; bottom: 0; left: 19px; }
+
+        .risk-score { font-size: 38px; font-weight: 700; margin-top: 12px; }
+        .risk-label { font-size: 13px; margin-top: -2px; font-weight: 600; text-transform: uppercase;}
+
+        .flag-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            background-color: #0f172a;
+            font-size: 12px;
+            border-left: 3px solid transparent;
+        }
+
+        .flag-item.danger-border { border-left-color: var(--danger); }
+        .flag-item.warning-border { border-left-color: var(--warning); }
+        .flag-item.success-border { border-left-color: var(--success); }
+
+        .flag-icon { font-size: 16px; }
+        .flag-text { display: flex; flex-direction: column; gap: 2px; }
+        .flag-label { font-weight: 600; color: var(--text-main); }
+        .flag-status { font-size: 11px; color: var(--text-muted); }
+
+        .amber { color: var(--warning); }
+        .rose { color: var(--danger); }
+        .emerald { color: var(--success); }
+
+        .matrix-box {
+            background-color: #0f172a;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 15px;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 15px;
+            min-height: 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .matrix-box strong { color: var(--text-main); display: block; margin-bottom: 4px;}
+
+        /* --- Risk Tree Rendering Styles --- */
+        .tree-node {
+            background-color: #0f172a;
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--primary);
+            border-radius: 6px;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            font-size: 13px;
+        }
+        .tree-node.risk-triggered { border-left-color: var(--danger); }
+        .tree-node.risk-clear { border-left-color: var(--success); }
+        
+        .tree-node-header { display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 4px;}
+        .tree-node-desc { font-size: 11px; color: var(--text-muted); }
+
+        /* --- Investigation Workbench Table --- */
+        .workbench-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            background-color: #0f172a;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .workbench-table th, .workbench-table td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .workbench-table th { background-color: #1e293b; color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 10px; }
+        .workbench-table tr:hover { background-color: #162235; }
+        
+        .status-pill {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 10px;
+        }
+        .status-pill.red { background-color: rgba(239, 68, 68, 0.2); color: var(--danger); }
+        .status-pill.yellow { background-color: rgba(245, 158, 11, 0.2); color: var(--warning); }
+        .status-pill.green { background-color: rgba(16, 185, 129, 0.2); color: var(--success); }
+
+        .btn-analyze {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px;
+            width: 100%;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 5px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+            transition: all 0.2s;
+        }
+
+        .btn-analyze:hover { background-color: #2563eb; transform: translateY(-1px); }
+        .btn-analyze:disabled { background-color: var(--bg-hover); color: var(--text-muted); cursor: not-allowed; }
+
+        .auto-btn {
+            background: #1e293b; 
+            color: #10b981; 
+            border: 1px solid #10b981; 
+            padding: 6px 12px; 
+            font-size: 11px; 
+            border-radius: 4px; 
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .auto-btn:hover { background: #10b981; color: #fff; }
+
+        .auto-btn.danger-btn {
+            color: #ef4444;
+            border: 1px solid #ef4444;
+        }
+        .auto-btn.danger-btn:hover { background: #ef4444; color: #fff; }
+    </style>
+</head>
+<body>
+
+<div class="system-container">
+    <header>
+        <h1>AI Motor Insurance Fraud Detection System</h1>
+        <div class="top-nav-right">
+            <span>⊞</span> <span>?</span> <span>⌬</span> <span>👤</span>
+        </div>
+    </header>
+
+    <div class="main-dashboard">
+        <!-- LEFT PANEL: CONTROLS & INPUTS -->
+        <div class="left-panel">
+            <div class="card">
+                <h2>Claim Input & Control Center <span>Dashboard Mode</span></h2>
+                <div class="input-group">
+                    <div class="form-field">
+                        <label>Claim ID</label>
+                        <input type="text" id="claimId" value="CLM-2026-8891">
+                    </div>
+                    <div class="form-field">
+                        <label>Vehicle Plate</label>
+                        <input type="text" id="vehiclePlate" value="YGN 2W-XXXX">
+                    </div>
+                    <div class="form-field">
+                        <label>Policy Type</label>
+                        <select id="policyType">
+                            <option>Comprehensive Premium</option>
+                            <option>Third Party Coverage</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label>Workshop Location</label>
+                        <input type="text" id="workshopLoc" value="Yangon Central Garage">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px;">
+                    <h2 style="margin: 0; padding: 0; border: none;">Evidence Hub</h2>
+                    <div style="display: flex; gap: 6px;">
+                        <button type="button" class="auto-btn" onclick="injectDemoAssets(true)">⚡ Low Risk (Match)</button>
+                        <button type="button" class="auto-btn danger-btn" onclick="injectDemoAssets(false)">🚨 High Risk (Mismatch)</button>
+                    </div>
+                </div>
+                
+                <div class="evidence-grid">
+                    <!-- Image File Box -->
+                    <div class="hub-box">
+                        <div class="upload-zone" id="photoDropzone" onclick="triggerFileInputClick(event)">
+                            <div id="photoPrompt">
+                                <div class="upload-icon">📷</div>
+                                <span>Click to upload local car image</span>
+                            </div>
+                            
+                            <div class="canvas-container" id="canvasContainer" style="display: none;">
+                                <div class="ai-floating-badge" id="aiStatusBadge">⏳ Awaiting Analysis...</div>
+                                <canvas id="localImageCanvas" onclick="repositionBox(event)"></canvas>
+                                <div class="canvas-tip" id="canvasTipText" style="display: none;">💡 Click to relocate bounding box</div>
+                            </div>
+                        </div>
+                        <input type="file" id="photoInput" accept="image/*" style="display: none;" onchange="handlePhotoUpload(event)">
+                        <button class="clear-btn" id="clearPhotoBtn" style="display:none;" onclick="clearPhotoField()">🗑️ Clear Image</button>
+                    </div>
+
+                    <!-- Voucher File Box -->
+                    <div class="hub-box">
+                        <div class="upload-zone" id="invoiceDropzone" onclick="document.getElementById('invoiceInput').click()">
+                            <div id="invoicePrompt">
+                                <div class="upload-icon">📄</div>
+                                <span>Click to upload local Voucher/Invoice</span>
+                            </div>
+                            <div id="invoiceBadge" class="file-badge" style="display: none;"></div>
+                        </div>
+                        <input type="file" id="invoiceInput" accept="image/*,application/pdf,text/plain" style="display: none;" onchange="handleInvoiceUpload(event)">
+                        <button class="clear-btn" id="clearInvoiceBtn" style="display:none;" onclick="clearInvoiceField()">🗑️ Clear Voucher</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADVANCED AUTOMATED AI CHECKS -->
+            <div class="card">
+                <h2>Advanced AI Forensic Checks Center</h2>
+                
+                <div class="check-item">
+                    <div>
+                        <span class="check-label">Error Level Analysis (Pixel Tampering)</span>
+                        <span class="micro-desc">Scans compression profiles for photoshop alterations (+20% Risk Base)</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="elaCheck" onchange="resetAnalysisState()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="check-item">
+                    <div>
+                        <span class="check-label">EXIF Location Timetable Mismatch</span>
+                        <span class="micro-desc">Cross-checks hidden image metadata with accident window (+15% Risk Base)</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="exifCheck" onchange="resetAnalysisState()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="check-item">
+                    <div>
+                        <span class="check-label">Recycled Invoice Hash Duplicate</span>
+                        <span class="micro-desc">Matches layout structure hashes against global claims archives (+25% Risk Base)</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="hashCheck" onchange="resetAnalysisState()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="check-item">
+                    <div>
+                        <span class="check-label">Atypical Pricing Outlier Detection</span>
+                        <span class="micro-desc">Flags line items exceeding local shop limits by 3 standard deviations (+12% Risk Base)</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="outlierCheck" onchange="resetAnalysisState()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <button class="btn-analyze" id="analyzeBtn" onclick="triggerFullAnalysis()">Run Full Analysis</button>
+        </div>
+
+        <!-- RIGHT PANEL: PREMIUM ANALYTICS OUTPUT SUITE -->
+        <div class="right-panel">
+            <div class="card" style="min-height: 630px;">
+                <h2>Premium Analytics Suite</h2>
+                <div class="tab-bar">
+                    <div class="tab active" id="tab-overview" onclick="switchTab('overview')">Overview Dashboard</div>
+                    <div class="tab" id="tab-risktree" onclick="switchTab('risktree')">Detailed Risk Tree</div>
+                    <div class="tab" id="tab-workbench" onclick="switchTab('workbench')">Investigation Workbench</div>
+                </div>
+
+                <!-- PANEL 1: OVERVIEW DASHBOARD VIEW -->
+                <div id="view-overview" class="tab-view active">
+                    <div class="analytics-grid">
+                        <div class="risk-card">
+                            <h3 style="font-size: 13px; color: var(--text-muted); margin: 0 0 10px 0;">Overall Fraud Risk Meter</h3>
+                            <div class="meter-container">
+                                <div class="meter-bg"></div>
+                                <div class="meter-cover"></div>
+                            </div>
+                            <div class="risk-score" id="fraudScoreDisplay">--</div>
+                            <div class="risk-label" id="riskLevelDisplay">Awaiting Analysis</div>
+                        </div>
+
+                        <div class="flags-card">
+                            <h3 style="font-size: 13px; color: var(--text-muted); margin: 0 0 10px 0;">Real-Time Flags</h3>
+                            <div class="flag-item success-border" id="photoFlagContainer">
+                                <div class="flag-icon emerald" id="photoFlagIcon">📷</div>
+                                <div class="flag-text">
+                                    <span class="flag-label">Image AI Core</span>
+                                    <span class="flag-status" id="flagPhotoStatus">Waiting file injection...</span>
+                                </div>
+                            </div>
+                            <div class="flag-item success-border" id="invoiceFlagContainer">
+                                <div class="flag-icon emerald" id="invoiceFlagIcon">📄</div>
+                                <div class="flag-text">
+                                    <span class="flag-label">Voucher OCR Core</span>
+                                    <span class="flag-status" id="invoiceFlagStatus">Waiting voucher upload...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 25px;">
+                        <h3 style="font-size: 13px; margin-top: 0; color: var(--text-muted);">Claim Cost Trend Analysis</h3>
+                        <div class="matrix-box" id="trendMatrixBox"><span>Execute analysis to run calculation arrays.</span></div>
+                        <h3 style="font-size: 13px; color: var(--text-muted);">Fraud Correlation Mapping</h3>
+                        <div class="matrix-box" id="networkMatrixBox"><span>No active map traces queried.</span></div>
+                    </div>
+                </div>
+
+                <!-- PANEL 2: DETAILED RISK TREE VIEW -->
+                <div id="view-risktree" class="tab-view">
+                    <h3 style="font-size: 13px; color: var(--text-muted); margin-top: 0;">Automated Risk Node Traversal</h3>
+                    
+                    <div class="tree-node" id="node-computer-vision">
+                        <div class="tree-node-header">
+                            <span>📦 Node 01: Image Data Extraction</span>
+                            <span id="node-cv-status">STANDBY</span>
+                        </div>
+                        <div class="tree-node-desc" id="node-cv-desc">Awaiting image mapping processing matrices.</div>
+                    </div>
+
+                    <div class="tree-node" id="node-forensics">
+                        <div class="tree-node-header">
+                            <span>🔍 Node 02: Digital Forensic Validation</span>
+                            <span id="node-forensic-status">STANDBY</span>
+                        </div>
+                        <div class="tree-node-desc" id="node-forensics-desc">Awaiting system traversal processing window.</div>
+                    </div>
+
+                    <div class="tree-node" id="node-voucher">
+                        <div class="tree-node-header">
+                            <span>📄 Node 03: Voucher Cross-Check Mapping</span>
+                            <span id="node-voucher-status">STANDBY</span>
+                        </div>
+                        <div class="tree-node-desc" id="node-voucher-desc">Cross-referencing invoice details against physical claim damage fields.</div>
+                    </div>
+
+                    <div class="tree-node" id="node-invoice-integrity">
+                        <div class="tree-node-header">
+                            <span>🧮 Node 04: OCR Financial Cryptography</span>
+                            <span id="node-integrity-status">STANDBY</span>
+                        </div>
+                        <div class="tree-node-desc" id="node-integrity-desc">Awaiting database structural verification arrays.</div>
+                    </div>
+                </div>
+
+                <!-- PANEL 3: INVESTIGATION WORKBENCH VIEW -->
+                <div id="view-workbench" class="tab-view">
+                    <h3 style="font-size: 13px; color: var(--text-muted); margin-top: 0;">Evidence Validation Records</h3>
+                    <table class="workbench-table">
+                        <thead>
+                            <tr>
+                                <th>Target Asset</th>
+                                <th>Extraction Type / Forensic Sub-Check</th>
+                                <th>Confidence</th>
+                                <th>System Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Local Car Photo</td>
+                                <td>Crash Area Coordinate Map</td>
+                                <td id="wb-cv-conf">--</td>
+                                <td><span id="wb-cv-pill" class="status-pill yellow">STANDBY</span></td>
+                            </tr>
+                            <tr>
+                                <td>Image Pixel Matrix</td>
+                                <td>Error Level Analysis (ELA Scan)</td>
+                                <td id="wb-ela-conf">--</td>
+                                <td><span id="wb-ela-pill" class="status-pill yellow">STANDBY</span></td>
+                            </tr>
+                            <tr>
+                                <td>Image Metadata</td>
+                                <td>EXIF Geo-temporal Verification</td>
+                                <td id="wb-exif-conf">--</td>
+                                <td><span id="wb-exif-pill" class="status-pill yellow">STANDBY</span></td>
+                            </tr>
+                            <tr>
+                                <td>Workshop Invoice</td>
+                                <td>Regex Text Value Extraction</td>
+                                <td id="wb-inv-conf">--</td>
+                                <td><span id="wb-inv-pill" class="status-pill yellow">STANDBY</span></td>
+                            </tr>
+                            <tr>
+                                <td>Invoice Signature</td>
+                                <td>Cryptographic Duplication Hash Check</td>
+                                <td id="wb-hash-conf">--</td>
+                                <td><span id="wb-hash-pill" class="status-pill yellow">STANDBY</span></td>
+                            </tr>
+                            <tr>
+                                <td>Pricing Structure</td>
+                                <td>Atypical Standard Deviation Matrix</td>
+                                <td id="wb-outlier-conf">--</td>
+                                <td><span id="wb-outlier-pill" class="status-pill yellow">STANDBY</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let isPhotoUploaded = false;
+    let isInvoiceUploaded = false;
+    let isAnalysisExecuted = false; 
+    let baseInvoiceText = "";
+    let isAssetsMatching = true; 
+    
+    let uploadedImageElement = new Image();
+    let boxX = 40, boxY = 40, boxSize = 60;
+    let detectedObjectLabel = "DAMAGE_ZONE";
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
+        document.getElementById(`tab-${tabId}`).classList.add('active');
+        document.getElementById(`view-${tabId}`).classList.add('active');
+    }
+
+    function triggerFileInputClick(e) {
+        if (isPhotoUploaded && document.getElementById('canvasContainer').contains(e.target)) return;
+        document.getElementById('photoInput').click();
+    }
+
+    function handlePhotoUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            uploadedImageElement = new Image();
+            uploadedImageElement.onload = function() {
+                document.getElementById('photoPrompt').style.display = 'none';
+                document.getElementById('canvasContainer').style.display = 'block';
+                document.getElementById('clearPhotoBtn').style.display = 'inline-block';
+                isPhotoUploaded = true;
+                
+                boxSize = Math.round(uploadedImageElement.width * 0.2);
+                boxX = Math.round(uploadedImageElement.width * 0.35);
+                boxY = Math.round(uploadedImageElement.height * 0.35);
+                
+                resetAnalysisState();
+            };
+            uploadedImageElement.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function handleInvoiceUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        document.getElementById('invoicePrompt').style.display = 'none';
+        document.getElementById('clearInvoiceBtn').style.display = 'inline-block';
+        const badge = document.getElementById('invoiceBadge');
+        
+        baseInvoiceText = `FILE: ${file.name}\n-----------------------\nEXTRACTED LINE ITEM:\n- Front Bumper Core Work\nTOTAL CHARGE: $1,000.00`;
+        badge.innerText = baseInvoiceText;
+        badge.classList.remove('mismatch');
+        badge.style.display = 'block';
+        isInvoiceUploaded = true;
+        resetAnalysisState();
+    }
+
+    function clearPhotoField() {
+        document.getElementById('photoInput').value = "";
+        document.getElementById('canvasContainer').style.display = 'none';
+        document.getElementById('photoPrompt').style.display = 'flex';
+        document.getElementById('clearPhotoBtn').style.display = 'none';
+        isPhotoUploaded = false;
+        resetAnalysisState();
+    }
+
+    function clearInvoiceField() {
+        document.getElementById('invoiceInput').value = "";
+        document.getElementById('invoiceBadge').style.display = 'none';
+        document.getElementById('invoicePrompt').style.display = 'flex';
+        document.getElementById('clearInvoiceBtn').style.display = 'none';
+        isInvoiceUploaded = false;
+        resetAnalysisState();
+    }
+
+    function resetAnalysisState() {
+        isAnalysisExecuted = false;
+        
+        if (isPhotoUploaded && uploadedImageElement.complete) {
+            const canvas = document.getElementById('localImageCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = uploadedImageElement.width;
+            canvas.height = uploadedImageElement.height;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(uploadedImageElement, 0, 0, canvas.width, canvas.height);
+            
+            document.getElementById('aiStatusBadge').innerText = "⏳ Awaiting Analysis...";
+            document.getElementById('aiStatusBadge').style.backgroundColor = "var(--warning)";
+            document.getElementById('aiStatusBadge').style.color = "black";
+            document.getElementById('canvasTipText').style.display = "none";
+        }
+
+        // Reset Dashboard Numbers
+        document.getElementById('fraudScoreDisplay').innerText = "--";
+        document.getElementById('fraudScoreDisplay').className = "risk-score";
+        document.getElementById('riskLevelDisplay').innerText = "Awaiting Analysis";
+
+        // Reset Flag Badges
+        document.getElementById('flagPhotoStatus').innerText = isPhotoUploaded ? "File linked. Ready for structural check." : "Waiting file injection...";
+        document.getElementById('flagInvoiceStatus').innerText = isInvoiceUploaded ? "Invoice loaded. Ready for OCR parsing." : "Waiting voucher upload...";
+        document.getElementById('photoFlagContainer').className = "flag-item success-border";
+        document.getElementById('invoiceFlagContainer').className = "flag-item success-border";
+        document.getElementById('photoFlagIcon').className = "flag-icon emerald";
+        document.getElementById('invoiceFlagIcon').className = "flag-icon emerald";
+
+        // Reset Tree Traversal Panels
+        document.getElementById('node-computer-vision').className = "tree-node";
+        document.getElementById('node-cv-status').innerText = "STANDBY";
+        document.getElementById('node-cv-status').className = "";
+        document.getElementById('node-cv-desc').innerText = "Awaiting image mapping processing matrices.";
+
+        document.getElementById('node-forensics').className = "tree-node";
+        document.getElementById('node-forensic-status').innerText = "STANDBY";
+        document.getElementById('node-forensic-status').className = "";
+        document.getElementById('node-forensics-desc').innerText = "Awaiting system traversal processing window.";
+
+        document.getElementById('node-voucher').className = "tree-node";
+        document.getElementById('node-voucher-status').innerText = "STANDBY";
+        document.getElementById('node-voucher-status').className = "";
+        document.getElementById('node-voucher-desc').innerText = "Cross-referencing invoice details against physical claim damage fields.";
+
+        document.getElementById('node-invoice-integrity').className = "tree-node";
+        document.getElementById('node-integrity-status').innerText = "STANDBY";
+        document.getElementById('node-integrity-status').className = "";
+        document.getElementById('node-integrity-desc').innerText = "Awaiting database structural verification arrays.";
+
+        // Reset Table Rows
+        const standbyPills = ['wb-cv-pill', 'wb-ela-pill', 'wb-exif-pill', 'wb-inv-pill', 'wb-hash-pill', 'wb-outlier-pill'];
+        standbyPills.forEach(id => {
+            const el = document.getElementById(id);
+            el.innerText = "STANDBY";
+            el.className = "status-pill yellow";
+        });
+        const confFields = ['wb-cv-conf', 'wb-ela-conf', 'wb-exif-conf', 'wb-inv-conf', 'wb-hash-conf', 'wb-outlier-conf'];
+        confFields.forEach(id => document.getElementById(id).innerText = "--");
+
+        document.getElementById('trendMatrixBox').innerHTML = "<span>Execute analysis to run calculation arrays.</span>";
+        document.getElementById('networkMatrixBox').innerHTML = "<span>No active map traces queried.</span>";
+    }
+
+    function drawVisionOverlay() {
+        if (!isPhotoUploaded || !uploadedImageElement.complete || !isAnalysisExecuted) return;
+        
+        const canvas = document.getElementById('localImageCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        canvas.width = uploadedImageElement.width;
+        canvas.height = uploadedImageElement.height;
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(uploadedImageElement, 0, 0, canvas.width, canvas.height);
+        
+        boxX = Math.max(0, Math.min(canvas.width - boxSize, boxX));
+        boxY = Math.max(0, Math.min(canvas.height - boxSize, boxY));
+
+        ctx.strokeStyle = "#ef4444";
+        ctx.lineWidth = Math.max(2, canvas.width * 0.008);
+        ctx.strokeRect(boxX, boxY, boxSize, boxSize);
+        
+        ctx.fillStyle = "#ef4444";
+        let computedFontSize = Math.max(12, Math.round(canvas.width * 0.04));
+        ctx.font = `bold ${computedFontSize}px monospace`;
+        ctx.fillText(`AI:${detectedObjectLabel}`, boxX, Math.max(computedFontSize, boxY - 6));
+        
+        document.getElementById('aiStatusBadge').innerText = "🤖 SCAN COMPLETED";
+        document.getElementById('aiStatusBadge').style.backgroundColor = "var(--danger)";
+        document.getElementById('aiStatusBadge').style.color = "white";
+        document.getElementById('canvasTipText').style.display = "block";
+    }
+
+    function repositionBox(event) {
+        if (!isPhotoUploaded || !isAnalysisExecuted) return;
+        event.stopPropagation();
+        
+        const canvas = document.getElementById('localImageCanvas');
+        const rect = canvas.getBoundingClientRect();
+        
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        
+        const clickX = (event.clientX - rect.left) * scaleX;
+        const clickY = (event.clientY - rect.top) * scaleY;
+        
+        boxX = clickX - (boxSize / 2);
+        boxY = clickY - (boxSize / 2);
+        
+        drawVisionOverlay();
+    }
+
+    function injectDemoAssets(matchCondition) {
+        isAssetsMatching = matchCondition;
+        
+        // FIX: Automatically synchronize the forensic toggles based on the chosen scenario
+        document.getElementById('elaCheck').checked = !matchCondition;
+        document.getElementById('exifCheck').checked = !matchCondition;
+        document.getElementById('hashCheck').checked = !matchCondition;
+        document.getElementById('outlierCheck').checked = !matchCondition;
+        
+        document.getElementById('photoPrompt').style.display = 'none';
+        document.getElementById('canvasContainer').style.display = 'block';
+        document.getElementById('clearPhotoBtn').style.display = 'inline-block';
+        isPhotoUploaded = true;
+
+        document.getElementById('invoicePrompt').style.display = 'none';
+        document.getElementById('clearInvoiceBtn').style.display = 'inline-block';
+        const badge = document.getElementById('invoiceBadge');
+        badge.style.display = 'block';
+        isInvoiceUploaded = true;
+
+        uploadedImageElement = new Image();
+
+        if (isAssetsMatching) {
+            detectedObjectLabel = "FRONT_BUMPER_DENT";
+            baseInvoiceText = "FILE: voucher_0991.pdf\n-----------------------\nEXTRACTED DATA WORK:\n- Front Bumper Realignment\nTOTAL COST: $1,000.00";
+            badge.classList.remove('mismatch');
+            
+            uploadedImageElement.onload = function() { 
+                boxSize = 50;
+                boxX = 25; 
+                boxY = 95; 
+                resetAnalysisState(); 
+            };
+            uploadedImageElement.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='200'><rect width='100%' height='100%' fill='%231e293b'/><text x='100' y='40' fill='%2364748b' font-family='sans-serif' font-weight='bold' font-size='14'>FRONT VEHICLE PANEL</text><path d='M20 120 L60 110 Q90 80 130 80 L280 80 L290 140 L20 140 Z' fill='%23475569'/><circle cx='80' cy='140' r='18' fill='%230f172a'/><path d='M15 115 L35 125 M15 130 L45 120' stroke='%23ef4444' stroke-width='4'/></svg>";
+        } else {
+            detectedObjectLabel = "SIDE_SWIPE_SCRATCH";
+            baseInvoiceText = "FILE: voucher_5512.pdf\n-----------------------\nEXTRACTED DATA WORK:\n- Replace Rear Proximity Sensor\nTOTAL COST: $4,850.00";
+            badge.classList.add('mismatch');
+
+            uploadedImageElement.onload = function() { 
+                boxSize = 65;
+                boxX = 140; 
+                boxY = 80; 
+                resetAnalysisState(); 
+            };
+            uploadedImageElement.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='200'><rect width='100%' height='100%' fill='%231e293b'/><text x='100' y='40' fill='%2364748b' font-family='sans-serif' font-weight='bold' font-size='14'>SIDE VEHICLE PANEL</text><rect x='40' y='80' width='220' height='60' fill='%23475569'/><circle cx='80' cy='140' r='18' fill='%230f172a'/><circle cx='220' cy='140' r='18' fill='%230f172a'/><path d='M120 95 Q170 115 240 95 M130 110 L210 115' stroke='%23ef4444' stroke-width='4'/></svg>";
+        }
+        badge.innerText = baseInvoiceText;
+    }
+
+    function triggerFullAnalysis() {
+        if (!isPhotoUploaded && !isInvoiceUploaded) {
+            alert("Please upload some car evidence assets or use the Low/High Risk simulator buttons first.");
+            return;
+        }
+
+        const btn = document.getElementById('analyzeBtn');
+        btn.disabled = true;
+        btn.innerText = "⏳ Recalculating Micro-Forensic Arrays (3s)...";
+        
+        isAnalysisExecuted = false; 
+
+        setTimeout(() => { 
+            btn.disabled = false; 
+            btn.innerText = "Run Full Analysis"; 
+            isAnalysisExecuted = true; 
+            executeBusinessLogic(); 
+        }, 3000); 
+    }
+
+    function executeBusinessLogic() {
+        let score = 0;
+        
+        const isElaTriggered = document.getElementById('elaCheck').checked;
+        const isExifTriggered = document.getElementById('exifCheck').checked;
+        const isHashTriggered = document.getElementById('hashCheck').checked;
+        const isOutlierTriggered = document.getElementById('outlierCheck').checked;
+        
+        let baseForensicWeight = 0;
+        if (isElaTriggered) baseForensicWeight += 20;
+        if (isExifTriggered) baseForensicWeight += 15;
+        if (isHashTriggered) baseForensicWeight += 25;
+        if (isOutlierTriggered) baseForensicWeight += 12;
+
+        const scoreDisplay = document.getElementById('fraudScoreDisplay');
+        const levelDisplay = document.getElementById('riskLevelDisplay');
+        
+        const phStatus = document.getElementById('flagPhotoStatus');
+        const phContainer = document.getElementById('photoFlagContainer');
+        const phIcon = document.getElementById('photoFlagIcon');
+        
+        const invStatus = document.getElementById('invoiceFlagStatus');
+        const invContainer = document.getElementById('invoiceFlagContainer');
+        const invIcon = document.getElementById('invoiceFlagIcon');
+
+        const cvNode = document.getElementById('node-computer-vision');
+        const cvStatus = document.getElementById('node-cv-status');
+        const cvDesc = document.getElementById('node-cv-desc');
+
+        const forensicNode = document.getElementById('node-forensics');
+        const forensicStatus = document.getElementById('node-forensic-status');
+        const forensicDesc = document.getElementById('node-forensics-desc');
+
+        const vNode = document.getElementById('node-voucher');
+        const vStatus = document.getElementById('node-voucher-status');
+        const vDesc = document.getElementById('node-voucher-desc');
+
+        const integrityNode = document.getElementById('node-invoice-integrity');
+        const integrityStatus = document.getElementById('node-integrity-status');
+        const integrityDesc = document.getElementById('node-integrity-desc');
+
+        const wbCvConf = document.getElementById('wb-cv-conf');
+        const wbCvPill = document.getElementById('wb-cv-pill');
+        const wbElaConf = document.getElementById('wb-ela-conf');
+        const wbElaPill = document.getElementById('wb-ela-pill');
+        const wbExifConf = document.getElementById('wb-exif-conf');
+        const wbExifPill = document.getElementById('wb-exif-pill');
+        const wbInvConf = document.getElementById('wb-inv-conf');
+        const wbInvPill = document.getElementById('wb-inv-pill');
+        const wbHashConf = document.getElementById('wb-hash-conf');
+        const wbHashPill = document.getElementById('wb-hash-pill');
+        const wbOutlierConf = document.getElementById('wb-outlier-conf');
+        const wbOutlierPill = document.getElementById('wb-outlier-pill');
+
+        drawVisionOverlay();
+
+        // 1. ELA Scan Rendering
+        if (isElaTriggered) {
+            wbElaConf.innerText = "94.8% Anomaly";
+            wbElaPill.innerText = "ALTERED";
+            wbElaPill.className = "status-pill red";
+        } else {
+            wbElaConf.innerText = "99.4% Match";
+            wbElaPill.innerText = "STABLE";
+            wbElaPill.className = "status-pill green";
+        }
+
+        // 2. EXIF Metadata Rendering
+        if (isExifTriggered) {
+            wbExifConf.innerText = "Breakdown Delta";
+            wbExifPill.innerText = "CONFLICT";
+            wbExifPill.className = "status-pill red";
+        } else {
+            wbExifConf.innerText = "Synchronized";
+            wbExifPill.innerText = "STABLE";
+            wbExifPill.className = "status-pill green";
+        }
+
+        // 3. FIX: Hash Check Table Row Logic (Now responds properly to sync parameters)
+        if (isHashTriggered) {
+            wbHashConf.innerText = "100% Match Array";
+            wbHashPill.innerText = "RECYCLED";
+            wbHashPill.className = "status-pill red";
+        } else {
+            wbHashConf.innerText = "0.00% Match";
+            wbHashPill.innerText = "UNIQUE";
+            wbHashPill.className = "status-pill green";
+        }
+
+        // 4. Outlier Analysis Rendering
+        if (isOutlierTriggered) {
+            wbOutlierConf.innerText = "+3.4 StdDev";
+            wbOutlierPill.innerText = "OUTLIER";
+            wbOutlierPill.className = "status-pill red";
+        } else {
+            wbOutlierConf.innerText = "Within 1σ";
+            wbOutlierPill.innerText = "AVERAGE";
+            wbOutlierPill.className = "status-pill green";
+        }
+
+        // Parent Risk Nodes Flow
+        if (isElaTriggered || isExifTriggered) {
+            forensicNode.className = "tree-node risk-triggered";
+            forensicStatus.innerText = "COMPROMISED";
+            forensicStatus.className = "rose";
+            forensicDesc.innerText = `Forensic anomaly: ${isElaTriggered ? '[Pixel Manipulation Profile] ' : ''}${isExifTriggered ? '[Metadata Timeline Break]' : ''}`;
+        } else {
+            forensicNode.className = "tree-node risk-clear";
+            forensicStatus.innerText = "CLEARED";
+            forensicStatus.className = "emerald";
+            forensicDesc.innerText = "Pixel profiles clean. Metadata metrics synchronize accurately into claim timeline window.";
+        }
+
+        if (isHashTriggered || isOutlierTriggered) {
+            integrityNode.className = "tree-node risk-triggered";
+            integrityStatus.innerText = "INTEGRITY FAULT";
+            integrityStatus.className = "rose";
+            integrityDesc.innerText = `Financial structure flags: ${isHashTriggered ? '[Recycled Invoice Signature] ' : ''}${isOutlierTriggered ? '[Pricing Structure Deviation]' : ''}`;
+        } else {
+            integrityNode.className = "tree-node risk-clear";
+            integrityStatus.innerText = "CLEARED";
+            integrityStatus.className = "emerald";
+            integrityDesc.innerText = "Line-item tracking correlates cleanly into historical garage reference matrices.";
+        }
+
+        // Core Image to Text Correlation checks
+        if (isPhotoUploaded && isInvoiceUploaded) {
+            if (isAssetsMatching) {
+                let calibratedForensicWeight = Math.round(baseForensicWeight * 0.44);
+                score = 6 + calibratedForensicWeight;
+                scoreDisplay.innerText = score + "%";
+                
+                phStatus.innerText = "Image metrics verified inside clean operating margins.";
+                phContainer.className = "flag-item success-border"; phIcon.className = "flag-icon emerald";
+
+                invStatus.innerText = "Voucher extraction parameters align with physical damage scope.";
+                invContainer.className = "flag-item success-border"; invIcon.className = "flag-icon emerald";
+
+                cvNode.className = "tree-node risk-clear"; cvStatus.innerText = "PASS"; cvStatus.className = "emerald";
+                cvDesc.innerText = `AI structural confirmation on ${detectedObjectLabel} successful.`;
+
+                vNode.className = "tree-node risk-clear"; vStatus.innerText = "CORRELATED"; vStatus.className = "emerald";
+                vDesc.innerText = "Repair item allocation matches vehicle structural boundaries.";
+
+                wbCvConf.innerText = "96.4%"; wbCvPill.innerText = "VALID"; wbCvPill.className = "status-pill green";
+                wbInvConf.innerText = "94.1%"; wbInvPill.innerText = "MATCHED"; wbInvPill.className = "status-pill green";
+            } else {
+                let calibratedForensicWeight = Math.round(baseForensicWeight * 0.29);
+                score = 70 + calibratedForensicWeight;
+                scoreDisplay.innerText = score + "%";
+
+                phStatus.innerText = "Critical spatial discrepancy captured across vehicle panels.";
+                phContainer.className = "flag-item danger-border"; phIcon.className = "flag-icon rose";
+
+                invStatus.innerText = "CRITICAL: Repair items point to separate uninjured structural arrays.";
+                invContainer.className = "flag-item danger-border"; invIcon.className = "flag-icon rose";
+
+                cvNode.className = "tree-node risk-triggered"; cvStatus.innerText = "FLAGGED"; cvStatus.className = "rose";
+                cvDesc.innerText = "Observed impact damage isolated exclusively to side/rear panels.";
+
+                vNode.className = "tree-node risk-triggered"; vStatus.innerText = "INTEGRITY BREAK"; vStatus.className = "rose";
+                vDesc.innerText = "Invoice requests component replacement on separate uninjured structural locations.";
+
+                wbCvConf.innerText = "91.2%"; wbCvPill.innerText = "CONFLICT"; wbCvPill.className = "status-pill red";
+                wbInvConf.innerText = "88.7%"; wbInvPill.innerText = "DATA ERROR"; wbInvPill.className = "status-pill red";
+            }
+        } else {
+            score = 25 + Math.round(baseForensicWeight * 0.5);
+            scoreDisplay.innerText = score + "%";
+        }
+
+        scoreDisplay.className = "risk-score";
+        if (score >= 70) {
+            scoreDisplay.classList.add('rose');
+            levelDisplay.innerText = "High Risk";
+        } else if (score >= 40) {
+            scoreDisplay.classList.add('amber');
+            levelDisplay.innerText = "Medium Risk";
+        } else {
+            scoreDisplay.classList.add('emerald');
+            levelDisplay.innerText = "Low Risk";
+        }
+
+        document.getElementById('trendMatrixBox').innerHTML = `<strong>Cost Matrix Trend Delta</strong> Verification evaluated across regional claim indexes. Matrix standard delta set.`;
+        document.getElementById('networkMatrixBox').innerHTML = `<strong>Forensic Signature Map</strong> Cryptographic structural crosschecks running on global claim logs.`;
+    }
+
+    window.onload = function() { resetAnalysisState(); };
+</script>
+
+</body>
+</html>

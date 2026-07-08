@@ -1,0 +1,12 @@
+names:
+- Weapon
+nc: 1
+roboflow:
+  license: CC BY 4.0
+  project: weapon_detection_for_final
+  url: https://universe.roboflow.com/weapon-b3vyl/weapon_detection_for_final/dataset/3
+  version: 3
+  workspace: weapon-b3vyl
+test: /content/weapon_detection_for_final-3/test/images
+train: /content/weapon_detection_for_final-3/train/images
+val: /content/weapon_detection_for_final-3/valid/images
