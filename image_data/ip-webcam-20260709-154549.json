@@ -1,0 +1,42 @@
+{
+  "categories": [
+    "fight",
+    "weapon"
+  ],
+  "confidence": 86.59253120422363,
+  "created_at": "2026-07-09T15:45:49",
+  "detections": [
+    {
+      "box": [
+        666,
+        97,
+        1052,
+        403
+      ],
+      "category": "weapon",
+      "confidence": 0.8659253120422363,
+      "label": "Weapon"
+    },
+    {
+      "box": [
+        647,
+        86,
+        1085,
+        606
+      ],
+      "category": "fight",
+      "confidence": 0.5248827338218689,
+      "label": "fight"
+    }
+  ],
+  "id": 1783588549955,
+  "image_file": "ip-webcam-20260709-154549.jpg",
+  "image_path": "image_data/ip-webcam-20260709-154549.jpg",
+  "labels": [
+    "Weapon",
+    "fight"
+  ],
+  "location": "East Corridor",
+  "notes": "Weapon, fight",
+  "status": "verified"
+}

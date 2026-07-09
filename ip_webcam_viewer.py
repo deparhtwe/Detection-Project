@@ -489,7 +489,7 @@ class DetectionHistoryRepository:
             print(f"Could not store alert in image_data: {exc}", file=sys.stderr)
             return None
 
-    def list_records(self, limit: int = 12) -> list[DetectionRecord]:
+    def list_records(self, limit: int | None = None) -> list[DetectionRecord]:
         records: list[DetectionRecord] = []
         for metadata_path in self._metadata_paths():
             metadata = self._load_metadata(metadata_path)
@@ -499,7 +499,9 @@ class DetectionHistoryRepository:
             if record is not None:
                 records.append(record)
         records.sort(key=lambda item: item.created_at, reverse=True)
-        return records[:limit] if limit > 0 else records
+        if limit is None or limit <= 0:
+            return records
+        return records[:limit]
 
     def get_record(self, record_id: int) -> DetectionRecord | None:
         for metadata_path in self._metadata_paths():
@@ -810,16 +812,9 @@ class DashboardApp:
 
         brand = tk.Frame(topbar, bg=self.BG)
         brand.pack(side="left", anchor="w")
-        brand_mark = tk.Frame(
-            brand,
-            bg="#2d0d21",
-            width=18,
-            height=48,
-            highlightthickness=1,
-            highlightbackground="#7e143a",
-        )
+        brand_mark = tk.Canvas(brand, width=6, height=48, bg=self.BG, highlightthickness=0, bd=0)
+        brand_mark.create_rectangle(1, 2, 5, 46, fill="#7e143a", outline="#7e143a")
         brand_mark.pack(side="left", padx=(0, 14))
-        brand_mark.pack_propagate(False)
         brand_copy = tk.Frame(brand, bg=self.BG)
         brand_copy.pack(side="left")
         tk.Label(
@@ -991,19 +986,6 @@ class DashboardApp:
             fg=self.TEXT,
             font=("Segoe UI", 12, "bold"),
         ).pack(side="left", padx=16, pady=14)
-        tk.Button(
-            right_head,
-            text="+ Simulate Trigger Event",
-            command=self.simulate_trigger_event,
-            bg="#16345c",
-            fg="#dff6ff",
-            activebackground="#204773",
-            activeforeground="white",
-            relief="flat",
-            font=("Segoe UI", 9, "bold"),
-            padx=14,
-            pady=6,
-        ).pack(side="right", padx=16, pady=10)
 
         history_wrap = tk.Frame(right_panel, bg=self.PANEL, padx=12, pady=12)
         history_wrap.grid(row=1, column=0, sticky="nsew")
@@ -1022,23 +1004,26 @@ class DashboardApp:
 
         header_row = tk.Frame(self.history_inner, bg="#09101f", highlightthickness=1, highlightbackground=self.BORDER)
         header_row.pack(fill="x", padx=4, pady=(4, 8))
-        for text, expand in [
-            ("THREAT EVENT / ID", 4),
-            ("CONFIDENCE", 2),
-            ("LOCATION", 2),
-            ("STATUS", 2),
-            ("ACTIONS", 1),
-        ]:
+        header_specs = [
+            ("THREAT EVENT / ID", 300, "w"),
+            ("CONFIDENCE", 110, "center"),
+            ("STATUS", 130, "center"),
+            ("ACTIONS", 120, "center"),
+        ]
+        for text, width, align in header_specs:
+            cell = tk.Frame(header_row, bg="#09101f", width=width, height=38)
+            cell.pack(side="left", fill="y", padx=6, pady=0)
+            cell.pack_propagate(False)
             tk.Label(
-                header_row,
+                cell,
                 text=text,
                 bg="#09101f",
                 fg=self.MUTED,
                 font=("Courier New", 8, "bold"),
-                anchor="w",
-                padx=12,
+                anchor=align,
+                padx=10 if align == "w" else 0,
                 pady=10,
-            ).pack(side="left", fill="x", expand=expand != 1)
+            ).pack(fill="both", expand=True)
 
         self.history_rows_container = tk.Frame(self.history_inner, bg=self.PANEL)
         self.history_rows_container.pack(fill="both", expand=True)
@@ -1064,7 +1049,7 @@ class DashboardApp:
         return text_var
 
     def load_initial_incidents(self) -> None:
-        records = self.history_repository.list_records(limit=12)
+        records = self.history_repository.list_records()
         self.incidents = [self.normalize_record(record) for record in records]
         if self.incidents:
             self.selected_record_id = self.incidents[0].id
@@ -1124,7 +1109,7 @@ class DashboardApp:
         return self.incidents[0] if self.incidents else None
 
     def refresh_history(self) -> None:
-        records = self.history_repository.list_records(limit=12)
+        records = self.history_repository.list_records()
         self.incidents = [self.normalize_record(record) for record in records]
 
         if self.selected_record_id is None or all(record.id != self.selected_record_id for record in self.incidents):
@@ -1170,19 +1155,34 @@ class DashboardApp:
 
     def build_history_row(self, record: DetectionRecord, selected: bool) -> None:
         bg = "#0e1930" if selected else "#09101f"
-        row = tk.Frame(self.history_rows_container, bg=bg, highlightthickness=1, highlightbackground="#ff4d7d" if selected else self.BORDER)
+        row = tk.Frame(
+            self.history_rows_container,
+            bg=bg,
+            height=70,
+            highlightthickness=1,
+            highlightbackground="#ff4d7d" if selected else self.BORDER,
+        )
         row.pack(fill="x", padx=4, pady=4)
+        row.pack_propagate(False)
         row.bind("<Button-1>", lambda _event, rid=record.id: self.select_record(rid))
 
-        name_col = tk.Frame(row, bg=bg)
-        name_col.pack(side="left", fill="x", expand=True, padx=12, pady=12)
+        name_col = tk.Frame(row, bg=bg, width=300)
+        name_col.pack(side="left", fill="y", padx=(10, 6), pady=10)
+        name_col.pack_propagate(False)
         dot_color = self.AMBER if record.status == "pending" else self.GREEN if record.status == "verified" else self.MUTED
-        dot = tk.Canvas(name_col, width=10, height=10, bg=bg, highlightthickness=0)
+        dot = tk.Canvas(name_col, width=10, height=10, bg=bg, highlightthickness=0, bd=0)
         dot.create_oval(2, 2, 8, 8, fill=dot_color, outline=dot_color)
-        dot.pack(side="left", padx=(0, 8))
+        dot.pack(side="left", padx=(0, 10), pady=16)
         text_wrap = tk.Frame(name_col, bg=bg)
-        text_wrap.pack(side="left", fill="x", expand=True)
-        tk.Label(text_wrap, text=record_display_title(record), bg=bg, fg=self.TEXT, font=("Segoe UI", 10, "bold"), anchor="w").pack(anchor="w")
+        text_wrap.pack(side="left", fill="both", expand=True, pady=4)
+        tk.Label(
+            text_wrap,
+            text=record_display_title(record),
+            bg=bg,
+            fg=self.TEXT,
+            font=("Segoe UI", 10, "bold"),
+            anchor="w",
+        ).pack(anchor="w")
         tk.Label(
             text_wrap,
             text=f"{format_timestamp(record.created_at)} | TRK-{record.id}",
@@ -1192,18 +1192,24 @@ class DashboardApp:
             anchor="w",
         ).pack(anchor="w", pady=(2, 0))
 
-        conf_col = tk.Frame(row, bg=bg, width=150)
-        conf_col.pack(side="left", padx=12)
+        conf_col = tk.Frame(row, bg=bg, width=110)
+        conf_col.pack(side="left", fill="y", padx=6, pady=10)
+        conf_col.pack_propagate(False)
         conf_bg = "#5d2f00" if record.confidence < 70 else "#6c142a" if record.confidence >= 85 else "#744200"
         conf_fg = "#ffd18c" if record.confidence < 85 else "#ffb6c3"
-        tk.Label(conf_col, text=f"{record.confidence:.0f}%", bg=conf_bg, fg=conf_fg, font=("Courier New", 9, "bold"), padx=8, pady=2).pack(anchor="w")
+        tk.Label(
+            conf_col,
+            text=f"{record.confidence:.0f}%",
+            bg=conf_bg,
+            fg=conf_fg,
+            font=("Courier New", 9, "bold"),
+            padx=12,
+            pady=4,
+        ).pack(anchor="center", expand=True)
 
-        loc_col = tk.Frame(row, bg=bg, width=180)
-        loc_col.pack(side="left", padx=12)
-        tk.Label(loc_col, text=record.location or "Parking Lot B", bg=bg, fg=self.TEXT, font=("Segoe UI", 10)).pack(anchor="w")
-
-        status_col = tk.Frame(row, bg=bg, width=140)
-        status_col.pack(side="left", padx=12)
+        status_col = tk.Frame(row, bg=bg, width=130)
+        status_col.pack(side="left", fill="y", padx=6, pady=10)
+        status_col.pack_propagate(False)
         status_bg = "#1a2c16" if record.status == "verified" else "#5f3508" if record.status == "pending" else "#121f39"
         status_fg = "#8df3cd" if record.status == "verified" else "#ffcf71" if record.status == "pending" else "#aeb9ce"
         status_text = record_status_meta(record.status)[1]
@@ -1213,15 +1219,18 @@ class DashboardApp:
             bg=status_bg,
             fg=status_fg,
             font=("Courier New", 8, "bold"),
-            padx=8,
-            pady=3,
-        ).pack(anchor="w")
+            padx=12,
+            pady=4,
+        ).pack(anchor="center", expand=True)
 
-        action_col = tk.Frame(row, bg=bg)
-        action_col.pack(side="right", padx=10)
-        self.make_action_button(action_col, "👁", lambda rec=record: self.view_record_image(rec))
-        self.make_action_button(action_col, "✎", lambda rec=record: self.edit_record(rec))
-        self.make_action_button(action_col, "🗑", lambda rec=record: self.delete_record(rec), danger=True)
+        action_col = tk.Frame(row, bg=bg, width=120)
+        action_col.pack(side="left", fill="y", padx=6, pady=10)
+        action_col.pack_propagate(False)
+        button_row = tk.Frame(action_col, bg=bg)
+        button_row.place(relx=0.5, rely=0.5, anchor="center")
+        self.make_action_button(button_row, "👁", lambda rec=record: self.view_record_image(rec))
+        self.make_action_button(button_row, "✎", lambda rec=record: self.edit_record(rec))
+        self.make_action_button(button_row, "🗑", lambda rec=record: self.delete_record(rec), danger=True)
 
     def make_action_button(self, parent: tk.Widget, text: str, command, danger: bool = False) -> None:
         tk.Button(
@@ -1237,7 +1246,7 @@ class DashboardApp:
             font=("Segoe UI Symbol", 9, "bold"),
             padx=0,
             pady=0,
-        ).pack(side="left", padx=3, pady=6)
+        ).pack(side="left", padx=1, pady=0)
 
     def render_stage(self, force: bool = False) -> None:
         frame, frame_id, error = self.get_current_frame()
@@ -1425,19 +1434,6 @@ class DashboardApp:
         self.last_alert_time = now
         play_notification_sound(self.app_config.sound_enabled)
 
-    def simulate_trigger_event(self) -> None:
-        fake_detection = Detection(
-            category="weapon" if self.confidence_value >= 70 else "fight",
-            label="Weapon" if self.confidence_value >= 70 else "Physical Altercation",
-            confidence=max(0.4, self.confidence_value / 100.0),
-            color=(255, 77, 125),
-            box=(0, 0, 0, 0),
-        )
-        frame, _, _ = self.get_current_frame()
-        self.add_alert([fake_detection], frame, force=True)
-        self.footer_var.set("New event simulated.")
-        self.render_stage(force=True)
-
     def view_record_image(self, record: DetectionRecord) -> None:
         image = None
         if record.image_data:
@@ -1472,7 +1468,7 @@ class DashboardApp:
         record.status = new_status.strip() or record.status
         record.notes = new_notes.strip() or record.notes
         self.history_repository.update_record(record.id, record.status, record.notes)
-        records = self.history_repository.list_records(limit=12)
+        records = self.history_repository.list_records()
         self.incidents = [self.normalize_record(item) for item in records]
         self.refresh_history()
         self.footer_var.set(f"Updated incident #{record.id}.")
@@ -1481,7 +1477,7 @@ class DashboardApp:
         if not messagebox.askyesno("Delete Incident", f"Delete incident #{record.id}?", parent=self.root):
             return
         self.history_repository.delete_record(record.id)
-        records = self.history_repository.list_records(limit=12)
+        records = self.history_repository.list_records()
         self.incidents = [self.normalize_record(item) for item in records]
         self.selected_record_id = self.incidents[0].id if self.incidents else None
         self.refresh_history()

@@ -1,0 +1,41 @@
+{
+  "categories": [
+    "weapon"
+  ],
+  "confidence": 88.60300183296204,
+  "created_at": "2026-07-09T15:45:14",
+  "detections": [
+    {
+      "box": [
+        487,
+        497,
+        950,
+        684
+      ],
+      "category": "weapon",
+      "confidence": 0.8860300183296204,
+      "label": "Weapon"
+    },
+    {
+      "box": [
+        504,
+        235,
+        965,
+        395
+      ],
+      "category": "weapon",
+      "confidence": 0.8807503581047058,
+      "label": "Weapon"
+    }
+  ],
+  "id": 1783588514919,
+  "image_file": "ip-webcam-20260709-154514.jpg",
+  "image_path": "image_data/ip-webcam-20260709-154514.jpg",
+  "labels": [
+    "Weapon",
+    "Weapon"
+  ],
+  "location": "Parking Lot B",
+  "notes": "Weapon, Weapon",
+  "status": "verified"
+}
