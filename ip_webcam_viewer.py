@@ -22,8 +22,8 @@ from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
 
-DEFAULT_WEAPON_MODEL_PATH = "runs/detect/train-7/weights/best.pt"
-DEFAULT_FIGHT_MODEL_PATH = "runs/detect/train-5/weights/best.pt"
+DEFAULT_WEAPON_MODEL_PATH = "runs/detect/train-1/weights/best.pt"
+DEFAULT_FIGHT_MODEL_PATH = "runs/detect/train/weights/best.pt"
 WINDOW_NAME = "Phone IP Webcam - Safety Detection"
 HISTORY_WINDOW_NAME = "Detection History - CRUD Console"
 
@@ -954,7 +954,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--confidence",
         type=float,
-        default=0.45,
+        default=0.50,
         help="Minimum detection confidence from 0.0 to 1.0.",
     )
     parser.add_argument(

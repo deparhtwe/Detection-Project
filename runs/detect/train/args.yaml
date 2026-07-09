@@ -1,8 +1,8 @@
 task: detect
 mode: train
 model: yolov8n.pt
-data: data.yaml
-epochs: 50
+data: /home/vix/Desktop/Testing/fight/data.yaml
+epochs: 20
 time: null
 patience: 100
 batch: 16
@@ -13,7 +13,7 @@ cache: false
 device: cpu
 workers: 8
 project: null
-name: train
+name: train-5
 exist_ok: false
 pretrained: true
 optimizer: auto
@@ -107,4 +107,4 @@ auto_augment: randaugment
 erasing: 0.4
 cfg: null
 tracker: botsort.yaml
-save_dir: /home/vix/Desktop/Testing/runs/detect/train
+save_dir: /home/vix/Desktop/Testing/runs/detect/train-5

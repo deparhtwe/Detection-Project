@@ -37,11 +37,10 @@
 
 # python ip_webcam_viewer.py 192.168.1.3:8080 --detect-all --imgsz 320 --process-every 1 --stream-width 640 --stream-height 480 
 
-#for cubic detection
-#python cubic.py 192.168.150.44:8080 --imgsz 320 --detect-width 416 --process-every 1
 
 
-#  ip_webcam_viewer.py 192.168.150.47:8080 --detect-all --database-url postgresql://user:password@localhost:5432/your_db
+
+#  ip_webcam_viewer.py 192.168.150.47:8080 --detect-all --database-url postgresql://postgres:password@localhost:5432/your_db
 
 
 
