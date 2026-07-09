@@ -1,3 +1,4 @@
+
 # IP Webcam Viewer
 
 Small Python client for the Android **IP Webcam** app.
@@ -119,3 +120,4 @@ to run the app
 ```bash
 python3 ip_webcam_viewer.py 192.168.150.47:8080 --detect-weapons
 ```
+
