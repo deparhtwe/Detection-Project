@@ -338,7 +338,14 @@ def make_alert_placeholder(cv2, width: int = 960, height: int = 540):
     return frame
 
 
-def frame_to_photoimage(cv2, frame, max_width: int, max_height: int, master: tk.Misc) -> tk.PhotoImage | None:
+def frame_to_photoimage(
+    cv2,
+    frame,
+    max_width: int,
+    max_height: int,
+    master: tk.Misc,
+    convert_bgr_to_rgb: bool = True,
+) -> tk.PhotoImage | None:
     if frame is None:
         return None
 
@@ -355,8 +362,8 @@ def frame_to_photoimage(cv2, frame, max_width: int, max_height: int, master: tk.
         new_height = max(1, int(height * scale))
         frame = cv2.resize(frame, (new_width, new_height))
 
-    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    ok, buffer = cv2.imencode(".png", rgb)
+    display_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) if convert_bgr_to_rgb else frame
+    ok, buffer = cv2.imencode(".png", display_frame)
     if not ok:
         return None
 
@@ -1275,7 +1282,14 @@ class DashboardApp:
         if frame is not None:
             if self.detection_active and detections:
                 draw_detection_boxes(self.cv2, frame, detections)
-            photo = frame_to_photoimage(self.cv2, frame, width - 30, height - 40, self.root)
+            photo = frame_to_photoimage(
+                self.cv2,
+                frame,
+                width - 30,
+                height - 40,
+                self.root,
+                convert_bgr_to_rgb=False,
+            )
             if photo is not None:
                 self.photo_image = photo
                 self.stage_canvas.create_image(width // 2, height // 2, image=self.photo_image, tags=("frame",))
