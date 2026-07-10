@@ -996,21 +996,12 @@ class DashboardApp:
 
         history_wrap = tk.Frame(right_panel, bg=self.PANEL, padx=12, pady=12)
         history_wrap.grid(row=1, column=0, sticky="nsew")
-        history_wrap.rowconfigure(0, weight=1)
+        history_wrap.rowconfigure(0, weight=0)
+        history_wrap.rowconfigure(1, weight=1)
         history_wrap.columnconfigure(0, weight=1)
 
-        self.history_canvas = tk.Canvas(history_wrap, bg=self.PANEL, highlightthickness=0)
-        self.history_scrollbar = tk.Scrollbar(history_wrap, orient="vertical", command=self.history_canvas.yview)
-        self.history_canvas.configure(yscrollcommand=self.history_scrollbar.set)
-        self.history_scrollbar.grid(row=0, column=1, sticky="ns")
-        self.history_canvas.grid(row=0, column=0, sticky="nsew")
-        self.history_inner = tk.Frame(self.history_canvas, bg=self.PANEL)
-        self.history_inner_id = self.history_canvas.create_window((0, 0), window=self.history_inner, anchor="nw")
-        self.history_inner.bind("<Configure>", lambda _event: self.history_canvas.configure(scrollregion=self.history_canvas.bbox("all")))
-        self.history_canvas.bind("<Configure>", self.on_history_resize)
-
-        header_row = tk.Frame(self.history_inner, bg="#09101f", highlightthickness=1, highlightbackground=self.BORDER)
-        header_row.pack(fill="x", padx=4, pady=(4, 8))
+        header_row = tk.Frame(history_wrap, bg="#09101f", highlightthickness=1, highlightbackground=self.BORDER)
+        header_row.grid(row=0, column=0, columnspan=2, sticky="ew", padx=4, pady=(4, 8))
         header_specs = [
             ("THREAT EVENT / ID", 300, "w"),
             ("CONFIDENCE", 110, "center"),
@@ -1031,6 +1022,16 @@ class DashboardApp:
                 padx=10 if align == "w" else 0,
                 pady=10,
             ).pack(fill="both", expand=True)
+
+        self.history_canvas = tk.Canvas(history_wrap, bg=self.PANEL, highlightthickness=0)
+        self.history_scrollbar = tk.Scrollbar(history_wrap, orient="vertical", command=self.history_canvas.yview)
+        self.history_canvas.configure(yscrollcommand=self.history_scrollbar.set)
+        self.history_scrollbar.grid(row=1, column=1, sticky="ns")
+        self.history_canvas.grid(row=1, column=0, sticky="nsew")
+        self.history_inner = tk.Frame(self.history_canvas, bg=self.PANEL)
+        self.history_inner_id = self.history_canvas.create_window((0, 0), window=self.history_inner, anchor="nw")
+        self.history_inner.bind("<Configure>", lambda _event: self.history_canvas.configure(scrollregion=self.history_canvas.bbox("all")))
+        self.history_canvas.bind("<Configure>", self.on_history_resize)
 
         self.history_rows_container = tk.Frame(self.history_inner, bg=self.PANEL)
         self.history_rows_container.pack(fill="both", expand=True)

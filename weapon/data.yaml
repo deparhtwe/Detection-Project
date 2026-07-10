@@ -7,6 +7,6 @@ roboflow:
   url: https://universe.roboflow.com/weapon-b3vyl/weapon_detection_for_final/dataset/4
   version: 4
   workspace: weapon-b3vyl
-test: /content/weapon_detection_for_final-4/test/images
-train: /content/weapon_detection_for_final-4/train/images
-val: /content/weapon_detection_for_final-4/valid/images
+test: /home/vix/Desktop/Projects/Detection-Project/weapon/test/images
+train: /home/vix/Desktop/Projects/Detection-Project/weapon/train/images
+val: /home/vix/Desktop/Projects/Detection-Project/weapon/valid/images

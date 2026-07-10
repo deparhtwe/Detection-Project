@@ -8,6 +8,6 @@ roboflow:
   url: https://universe.roboflow.com/weapon-b3vyl/fight-k9buj-z9coy/dataset/2
   version: 2
   workspace: weapon-b3vyl
-test: /home/vix/Desktop/Testing/fight/test/images
-train: /home/vix/Desktop/Testing/fight/train/images
-val: /home/vix/Desktop/Testing/fight/valid/images
+test: /home/vix/Desktop/Projects/Detection-Project/fight/test/images
+train: /home/vix/Desktop/Projects/Detection-Project/fight/train/images
+val: /home/vix/Desktop/Projects/Detection-Project/fight/valid/images
