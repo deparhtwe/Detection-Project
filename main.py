@@ -523,7 +523,48 @@ class DetectionHistoryRepository:
             return self._record_from_metadata(metadata)
         return None
 
-    def update_record(self, record_id: int, status: str, notes: str) -> bool:
+    def create_record(
+        self,
+        *,
+        labels: list[str],
+        confidence: float,
+        status: str,
+        notes: str,
+        location: str,
+    ) -> DetectionRecord | None:
+        """Create an operator-entered incident that does not require a camera image."""
+        try:
+            record = DetectionRecord(
+                id=self._next_id(),
+                created_at=datetime.now(),
+                categories=[label.lower() for label in labels] or ["unknown"],
+                labels=labels or ["Unknown"],
+                confidence=confidence,
+                image_path="",
+                status=status,
+                notes=notes,
+                location=location,
+            )
+            metadata_path = self.storage_dir / f"incident-{record.id}.json"
+            metadata_path.write_text(
+                json.dumps(self._metadata_for_record(record), indent=2, sort_keys=True),
+                encoding="utf-8",
+            )
+            return record
+        except Exception as exc:
+            print(f"Could not create history record: {exc}", file=sys.stderr)
+            return None
+
+    def update_record(
+        self,
+        record_id: int,
+        *,
+        labels: list[str],
+        confidence: float,
+        status: str,
+        notes: str,
+        location: str,
+    ) -> bool:
         for metadata_path in self._metadata_paths():
             metadata = self._load_metadata(metadata_path)
             if not metadata:
@@ -533,8 +574,12 @@ class DetectionHistoryRepository:
                     continue
             except Exception:
                 continue
+            metadata["labels"] = labels or metadata.get("labels", ["Unknown"])
+            metadata["categories"] = [label.lower() for label in metadata["labels"]]
+            metadata["confidence"] = confidence
             metadata["status"] = status
             metadata["notes"] = notes
+            metadata["location"] = location
             metadata["updated_at"] = iso_now()
             metadata_path.write_text(json.dumps(metadata, indent=2, sort_keys=True), encoding="utf-8")
             return True
@@ -782,6 +827,7 @@ class DashboardApp:
         self.root.geometry("1850x980")
         self.root.minsize(1240, 760)
         self.root.protocol("WM_DELETE_WINDOW", self.close)
+        self.root.bind("<Configure>", self.on_window_resize, add="+")
 
         self.closed = False
         self.detection_active = True
@@ -793,6 +839,8 @@ class DashboardApp:
         self.photo_image: tk.PhotoImage | None = None
         self.incidents: list[DetectionRecord] = []
         self.selected_record_id: int | None = None
+        self.history_layout = "compact"
+        self.history_resize_job: str | None = None
 
         self.capture_time_var = tk.StringVar(value="2026-07-09 14:09:14")
         self.operator_notes_var = tk.StringVar(value="Weapon")
@@ -993,6 +1041,19 @@ class DashboardApp:
             fg=self.TEXT,
             font=("Segoe UI", 12, "bold"),
         ).pack(side="left", padx=16, pady=14)
+        tk.Button(
+            right_head,
+            text="+ New incident",
+            command=self.create_record,
+            bg=self.CYAN,
+            fg="#06101e",
+            activebackground="#84edff",
+            activeforeground="#06101e",
+            relief="flat",
+            font=("Segoe UI", 9, "bold"),
+            padx=10,
+            pady=6,
+        ).pack(side="right", padx=14, pady=9)
 
         history_wrap = tk.Frame(right_panel, bg=self.PANEL, padx=12, pady=12)
         history_wrap.grid(row=1, column=0, sticky="nsew")
@@ -1000,28 +1061,8 @@ class DashboardApp:
         history_wrap.rowconfigure(1, weight=1)
         history_wrap.columnconfigure(0, weight=1)
 
-        header_row = tk.Frame(history_wrap, bg="#09101f", highlightthickness=1, highlightbackground=self.BORDER)
-        header_row.grid(row=0, column=0, columnspan=2, sticky="ew", padx=4, pady=(4, 8))
-        header_specs = [
-            ("THREAT EVENT / ID", 300, "w"),
-            ("CONFIDENCE", 110, "center"),
-            ("STATUS", 130, "center"),
-            ("ACTIONS", 120, "center"),
-        ]
-        for text, width, align in header_specs:
-            cell = tk.Frame(header_row, bg="#09101f", width=width, height=38)
-            cell.pack(side="left", fill="y", padx=6, pady=0)
-            cell.pack_propagate(False)
-            tk.Label(
-                cell,
-                text=text,
-                bg="#09101f",
-                fg=self.MUTED,
-                font=("Courier New", 8, "bold"),
-                anchor=align,
-                padx=10 if align == "w" else 0,
-                pady=10,
-            ).pack(fill="both", expand=True)
+        self.history_header = tk.Frame(history_wrap, bg="#09101f", highlightthickness=1, highlightbackground=self.BORDER)
+        self.history_header.grid(row=0, column=0, columnspan=2, sticky="ew", padx=4, pady=(4, 8))
 
         self.history_canvas = tk.Canvas(history_wrap, bg=self.PANEL, highlightthickness=0)
         self.history_scrollbar = tk.Scrollbar(history_wrap, orient="vertical", command=self.history_canvas.yview)
@@ -1047,6 +1088,7 @@ class DashboardApp:
             pady=10,
         )
         self.status_footer.grid(row=2, column=0, sticky="ew")
+        self.rebuild_history_header()
 
     def make_meta_item(self, parent: tk.Widget, column: int, label: str, value: str, value_color: str) -> tk.StringVar:
         frame = tk.Frame(parent, bg=self.PANEL_2, padx=14, pady=12)
@@ -1101,6 +1143,44 @@ class DashboardApp:
 
     def on_history_resize(self, event) -> None:
         self.history_canvas.itemconfigure(self.history_inner_id, width=event.width)
+        layout = "table" if event.width >= 760 else "compact"
+        if layout != self.history_layout:
+            self.history_layout = layout
+            self.rebuild_history_header()
+            self.refresh_history_view()
+
+    def on_window_resize(self, _event=None) -> None:
+        """Debounce resize events so history reflows smoothly on laptop screens."""
+        if self.history_resize_job is not None:
+            self.root.after_cancel(self.history_resize_job)
+        self.history_resize_job = self.root.after(120, self.refresh_history_view)
+
+    def rebuild_history_header(self) -> None:
+        for child in self.history_header.winfo_children():
+            child.destroy()
+        if self.history_layout == "compact":
+            specs = [("INCIDENT DETAILS", "w"), ("ACTIONS", "e")]
+        else:
+            specs = [
+                ("THREAT EVENT / ID", "w"),
+                ("CONFIDENCE", "center"),
+                ("STATUS", "center"),
+                ("ACTIONS", "center"),
+            ]
+        for index, (text, anchor) in enumerate(specs):
+            tk.Label(
+                self.history_header,
+                text=text,
+                bg="#09101f",
+                fg=self.MUTED,
+                font=("Courier New", 8, "bold"),
+                anchor=anchor,
+                padx=12,
+                pady=10,
+            ).grid(row=0, column=index, sticky="ew")
+        self.history_header.columnconfigure(0, weight=1)
+        for index in range(1, len(specs)):
+            self.history_header.columnconfigure(index, weight=0, minsize=100 if self.history_layout == "table" else 190)
 
     def get_current_frame(self):
         return self.stream_controller.get_frame()
@@ -1162,6 +1242,10 @@ class DashboardApp:
             self.build_history_row(record, record.id == self.selected_record_id)
 
     def build_history_row(self, record: DetectionRecord, selected: bool) -> None:
+        if self.history_layout == "compact":
+            self.build_compact_history_card(record, selected)
+            return
+
         bg = "#0e1930" if selected else "#09101f"
         row = tk.Frame(
             self.history_rows_container,
@@ -1174,8 +1258,8 @@ class DashboardApp:
         row.pack_propagate(False)
         row.bind("<Button-1>", lambda _event, rid=record.id: self.select_record(rid))
 
-        name_col = tk.Frame(row, bg=bg, width=300)
-        name_col.pack(side="left", fill="y", padx=(10, 6), pady=10)
+        name_col = tk.Frame(row, bg=bg)
+        name_col.pack(side="left", fill="both", expand=True, padx=(10, 6), pady=10)
         name_col.pack_propagate(False)
         dot_color = self.AMBER if record.status == "pending" else self.GREEN if record.status == "verified" else self.MUTED
         dot = tk.Canvas(name_col, width=10, height=10, bg=bg, highlightthickness=0, bd=0)
@@ -1240,6 +1324,30 @@ class DashboardApp:
         self.make_action_button(button_row, "✎", lambda rec=record: self.edit_record(rec))
         self.make_action_button(button_row, "🗑", lambda rec=record: self.delete_record(rec), danger=True)
 
+    def build_compact_history_card(self, record: DetectionRecord, selected: bool) -> None:
+        bg = "#0e1930" if selected else "#09101f"
+        card = tk.Frame(self.history_rows_container, bg=bg, highlightthickness=1,
+                        highlightbackground=self.PINK if selected else self.BORDER)
+        card.pack(fill="x", padx=4, pady=4)
+        card.bind("<Button-1>", lambda _event, rid=record.id: self.select_record(rid))
+
+        details = tk.Frame(card, bg=bg)
+        details.pack(side="left", fill="both", expand=True, padx=12, pady=10)
+        tk.Label(details, text=record_display_title(record), bg=bg, fg=self.TEXT,
+                 font=("Segoe UI", 10, "bold"), anchor="w").pack(fill="x")
+        tk.Label(details, text=f"{format_timestamp(record.created_at)}  |  TRK-{record.id}  |  {record.location or 'No location'}",
+                 bg=bg, fg=self.MUTED, font=("Courier New", 8), anchor="w").pack(fill="x", pady=(3, 0))
+        status_text = record_status_meta(record.status)[1]
+        status_color = self.GREEN if record.status == "verified" else self.AMBER if record.status == "pending" else self.MUTED
+        tk.Label(details, text=f"{record.confidence:.0f}%  •  {status_text}", bg=bg, fg=status_color,
+                 font=("Courier New", 8, "bold"), anchor="w").pack(fill="x", pady=(5, 0))
+
+        actions = tk.Frame(card, bg=bg)
+        actions.pack(side="right", padx=8, pady=12)
+        self.make_action_button(actions, "View", lambda rec=record: self.view_record_image(rec))
+        self.make_action_button(actions, "Edit", lambda rec=record: self.edit_record(rec))
+        self.make_action_button(actions, "Del", lambda rec=record: self.delete_record(rec), danger=True)
+
     def make_action_button(self, parent: tk.Widget, text: str, command, danger: bool = False) -> None:
         tk.Button(
             parent,
@@ -1250,10 +1358,10 @@ class DashboardApp:
             activebackground="#1d2b46",
             activeforeground="white",
             relief="flat",
-            width=2,
-            font=("Segoe UI Symbol", 9, "bold"),
-            padx=0,
-            pady=0,
+            width=4,
+            font=("Segoe UI", 8, "bold"),
+            padx=2,
+            pady=2,
         ).pack(side="left", padx=1, pady=0)
 
     def render_stage(self, force: bool = False) -> None:
@@ -1472,21 +1580,87 @@ class DashboardApp:
         label.image = photo
         label.pack(padx=12, pady=12)
 
-    def edit_record(self, record: DetectionRecord) -> None:
-        new_status = simpledialog.askstring("Edit Incident", "Status:", initialvalue=record.status, parent=self.root)
-        if new_status is None:
-            return
-        new_notes = simpledialog.askstring("Edit Incident", "Notes:", initialvalue=record.notes, parent=self.root)
-        if new_notes is None:
-            return
+    def create_record(self) -> None:
+        self.open_record_editor()
 
-        record.status = new_status.strip() or record.status
-        record.notes = new_notes.strip() or record.notes
-        self.history_repository.update_record(record.id, record.status, record.notes)
-        records = self.history_repository.list_records()
-        self.incidents = [self.normalize_record(item) for item in records]
-        self.refresh_history()
-        self.footer_var.set(f"Updated incident #{record.id}.")
+    def edit_record(self, record: DetectionRecord) -> None:
+        self.open_record_editor(record)
+
+    def open_record_editor(self, record: DetectionRecord | None = None) -> None:
+        """A single form keeps create and update actions consistent and keyboard-friendly."""
+        is_new = record is None
+        top = tk.Toplevel(self.root)
+        top.title("New Detection Incident" if is_new else f"Edit Incident #{record.id}")
+        top.configure(bg=self.PANEL)
+        top.transient(self.root)
+        top.grab_set()
+        top.resizable(True, False)
+        top.minsize(440, 390)
+
+        form = tk.Frame(top, bg=self.PANEL, padx=22, pady=18)
+        form.pack(fill="both", expand=True)
+        form.columnconfigure(1, weight=1)
+        labels_var = tk.StringVar(value="" if is_new else ", ".join(record.labels))
+        confidence_var = tk.StringVar(value="70" if is_new else f"{record.confidence:.0f}")
+        location_var = tk.StringVar(value="Live Camera Feed" if is_new else record.location)
+        status_var = tk.StringVar(value="pending" if is_new else record_status_meta(record.status)[0])
+
+        def add_field(row: int, title: str, variable: tk.StringVar) -> None:
+            tk.Label(form, text=title, bg=self.PANEL, fg=self.MUTED,
+                     font=("Courier New", 8, "bold"), anchor="w").grid(row=row, column=0, sticky="w", padx=(0, 12), pady=6)
+            tk.Entry(form, textvariable=variable, bg="#071023", fg=self.TEXT, insertbackground=self.TEXT,
+                     relief="flat", font=("Segoe UI", 10)).grid(row=row, column=1, sticky="ew", pady=6, ipady=6)
+
+        add_field(0, "EVENT LABELS", labels_var)
+        add_field(1, "CONFIDENCE (%)", confidence_var)
+        add_field(2, "LOCATION", location_var)
+        tk.Label(form, text="STATUS", bg=self.PANEL, fg=self.MUTED, font=("Courier New", 8, "bold")).grid(row=3, column=0, sticky="w", padx=(0, 12), pady=6)
+        tk.OptionMenu(form, status_var, "pending", "verified", "false_positive").grid(row=3, column=1, sticky="w", pady=6)
+        tk.Label(form, text="NOTES", bg=self.PANEL, fg=self.MUTED, font=("Courier New", 8, "bold")).grid(row=4, column=0, sticky="nw", padx=(0, 12), pady=6)
+        notes = tk.Text(form, height=5, bg="#071023", fg=self.TEXT, insertbackground=self.TEXT,
+                        relief="flat", wrap="word", font=("Segoe UI", 10))
+        notes.grid(row=4, column=1, sticky="nsew", pady=6)
+        if not is_new:
+            notes.insert("1.0", record.notes)
+
+        buttons = tk.Frame(form, bg=self.PANEL)
+        buttons.grid(row=5, column=0, columnspan=2, sticky="e", pady=(16, 0))
+        tk.Button(buttons, text="Cancel", command=top.destroy, bg="#17233b", fg=self.TEXT,
+                  relief="flat", padx=14, pady=7).pack(side="right", padx=(8, 0))
+
+        def save() -> None:
+            labels = [value.strip() for value in labels_var.get().split(",") if value.strip()]
+            try:
+                confidence = float(confidence_var.get())
+            except ValueError:
+                messagebox.showerror("Invalid confidence", "Enter a number from 0 to 100.", parent=top)
+                return
+            if not labels or not 0 <= confidence <= 100:
+                messagebox.showerror("Missing incident details", "Provide at least one label and confidence from 0 to 100.", parent=top)
+                return
+            status = status_var.get()
+            note_text = notes.get("1.0", "end-1c").strip()
+            location = location_var.get().strip() or "Live Camera Feed"
+            if is_new:
+                saved = self.history_repository.create_record(labels=labels, confidence=confidence, status=status,
+                                                             notes=note_text, location=location)
+                if saved is None:
+                    messagebox.showerror("Create failed", "The incident could not be saved.", parent=top)
+                    return
+                self.selected_record_id = saved.id
+                message = f"Created incident #{saved.id}."
+            else:
+                if not self.history_repository.update_record(record.id, labels=labels, confidence=confidence,
+                                                             status=status, notes=note_text, location=location):
+                    messagebox.showerror("Update failed", "The incident could not be updated.", parent=top)
+                    return
+                message = f"Updated incident #{record.id}."
+            top.destroy()
+            self.refresh_history()
+            self.footer_var.set(message)
+
+        tk.Button(buttons, text="Create" if is_new else "Save changes", command=save, bg=self.CYAN, fg="#06101e",
+                  activebackground="#84edff", relief="flat", font=("Segoe UI", 9, "bold"), padx=14, pady=7).pack(side="right")
 
     def delete_record(self, record: DetectionRecord) -> None:
         if not messagebox.askyesno("Delete Incident", f"Delete incident #{record.id}?", parent=self.root):
