@@ -23,7 +23,7 @@ from urllib.parse import urlparse
 import tkinter as tk
 from tkinter import messagebox, simpledialog
 
-DEFAULT_WEAPON_MODEL_PATH = "runs/detect/train-2/weights/best.pt"
+DEFAULT_WEAPON_MODEL_PATH = "runs/detect/train-1/weights/best.pt"
 DEFAULT_FIGHT_MODEL_PATH = "runs/detect/train/weights/best.pt"
 
 DEFAULT_WEAPON_LABELS = {"handgun","knife","smg","shotgun"}
@@ -97,6 +97,9 @@ def normalize_base_url(address: str) -> str:
     address = address.strip()
     if not address:
         raise ValueError("address cannot be empty")
+
+    if address.lower().startswith(("rtsp://", "rtsps://")):
+        return address
 
     if not address.startswith(("http://", "https://")):
         address = f"http://{address}"
@@ -188,7 +191,7 @@ def fallback_records() -> list[DetectionRecord]:
 
 
 def record_display_title(record: DetectionRecord) -> str:
-    return display_label(record.labels[0]) if record.labels else "Unknown"
+    return display_label(record.labels[0]) if record.labels else "Fight" if "fight" in {category.lower() for category in record.categories} else "Unknown"
 
 
 def record_status_meta(status: str) -> tuple[str, str]:
@@ -211,6 +214,7 @@ def display_label(label: str) -> str:
         "knife": "Knife",
         "smg": "SMG",
         "shotgun": "ShotGun",
+        "fight": "Fight",
     }
     return aliases.get(normalized, label.strip())
 
@@ -410,6 +414,21 @@ class DetectionHistoryRepository:
 
     def _record_from_metadata(self, metadata: dict) -> DetectionRecord | None:
         try:
+            detections = metadata.get("detections", [])
+            if not isinstance(detections, list):
+                detections = []
+            labels = list(metadata.get("labels") or [
+                str(item.get("label", "")) for item in detections if isinstance(item, dict) and item.get("label")
+            ])
+            categories = list(metadata.get("categories") or [
+                str(item.get("category", "")) for item in detections if isinstance(item, dict) and item.get("category")
+            ])
+            confidence = metadata.get("confidence")
+            if confidence is None and detections:
+                confidence = max(
+                    (float(item.get("confidence", 0.0)) for item in detections if isinstance(item, dict)),
+                    default=0.0,
+                )
             image_path = Path(metadata.get("image_path", ""))
             if not image_path.is_absolute():
                 image_path = self.storage_dir / image_path.name
@@ -418,13 +437,13 @@ class DetectionHistoryRepository:
             record = DetectionRecord(
                 id=int(metadata["id"]),
                 created_at=parse_iso_datetime(metadata.get("created_at")),
-                categories=list(metadata.get("categories", [])),
-                labels=list(metadata.get("labels", [])),
-                confidence=float(metadata.get("confidence", 0.0)),
+                categories=categories or ["unknown"],
+                labels=labels or ["Unknown"],
+                confidence=float(confidence or 0.0),
                 image_path=str(image_path),
                 status=str(metadata.get("status", "new")),
-                notes=str(metadata.get("notes", "")),
-                location=str(metadata.get("location", "Parking Lot B")),
+                notes=str(metadata.get("notes") or format_detection_labels(labels)),
+                location=str(metadata.get("location") or "Live Camera Feed"),
             )
             return record
         except Exception as exc:
@@ -652,8 +671,13 @@ class StreamController:
             if self.running:
                 return True
 
-            video_url = f"{self.base_url}/video"
-            camera = self.cv2.VideoCapture(video_url)
+            video_url = self.base_url
+            params = [
+                self.cv2.CAP_PROP_HW_ACCELERATION,
+                self.cv2.VIDEO_ACCELERATION_ANY,
+            ]
+            camera = self.cv2.VideoCapture()
+            camera.open(video_url, self.cv2.CAP_FFMPEG, params)
             camera.set(self.cv2.CAP_PROP_BUFFERSIZE, 1)
             if self.app_config.stream_width > 0:
                 camera.set(self.cv2.CAP_PROP_FRAME_WIDTH, self.app_config.stream_width)
@@ -854,7 +878,7 @@ class DashboardApp:
         self.photo_image: tk.PhotoImage | None = None
         self.incidents: list[DetectionRecord] = []
         self.selected_record_id: int | None = None
-        self.history_layout = "compact"
+        self.history_layout = "table"
         self.history_resize_job: str | None = None
         self.last_history_signature: tuple[str, int | None, tuple[int, ...]] | None = None
 
@@ -1159,7 +1183,7 @@ class DashboardApp:
 
     def on_history_resize(self, event) -> None:
         self.history_canvas.itemconfigure(self.history_inner_id, width=event.width)
-        layout = "table" if event.width >= 760 else "compact"
+        layout = "table"
         if layout != self.history_layout:
             self.history_layout = layout
             self.rebuild_history_header()
@@ -1382,10 +1406,13 @@ class DashboardApp:
             activebackground="#1d2b46",
             activeforeground="white",
             relief="flat",
-            width=4,
+            width=2,
             font=("Segoe UI", 8, "bold"),
             padx=2,
             pady=2,
+            highlightthickness=1,
+            highlightbackground="#d7e4ff",
+            highlightcolor="#49e3ff",
         ).pack(side="left", padx=1, pady=0)
 
     def render_stage(self, force: bool = False) -> None:
@@ -1565,7 +1592,11 @@ class DashboardApp:
             if any(det.category == "weapon" for det in detections)
             else "Live Camera Feed"
         )
-        path = self.save_alert_frame(frame)
+        # Persist the same annotated frame shown in the live view so history
+        # images retain the detection rectangle and label context.
+        history_frame = frame.copy()
+        draw_detection_boxes(self.cv2, history_frame, detections)
+        path = self.save_alert_frame(history_frame)
         stored_id = self.history_repository.create_alert(path, detections)
         if stored_id is not None:
             record = self.history_repository.get_record(stored_id)
@@ -1738,7 +1769,7 @@ def view_stream(base_url: str, output_dir: Path, skip_check: bool, app_config: A
     detectors = load_detectors(app_config)
     history_repository = DetectionHistoryRepository(output_dir)
 
-    if not skip_check:
+    if not skip_check and not base_url.lower().startswith(("rtsp://", "rtsps://")):
         check_connection(base_url)
 
     print("Connected.")
@@ -1760,7 +1791,7 @@ def view_stream(base_url: str, output_dir: Path, skip_check: bool, app_config: A
         detectors=detectors,
     )
     if not controller.start():
-        print(controller.last_error or f"Could not open video stream: {base_url}/video", file=sys.stderr)
+        print(controller.last_error or f"Could not open camera stream: {base_url}", file=sys.stderr)
         history_repository.close()
         return 1
 
@@ -1783,7 +1814,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Connect to an Android IP Webcam app stream over Wi-Fi.")
     parser.add_argument(
         "address",
-        help="Phone camera address, for example 192.168.1.23:8080 or http://192.168.1.23:8080",
+        nargs="?",
+        help="RTSP camera URL. If omitted, uses the rtsp_url configured in rtsp.py.",
     )
     parser.add_argument(
         "--output-dir",
@@ -1889,7 +1921,12 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     try:
-        base_url = normalize_base_url(args.address)
+        address = args.address
+        if not address:
+            from rtsp import rtsp_url
+
+            address = rtsp_url
+        base_url = normalize_base_url(address)
         detect_all_by_default = not (args.detect_weapons or args.detect_fight or args.detect_all)
         detect_weapons = args.detect_weapons or args.detect_all or detect_all_by_default
         detect_fight = args.detect_fight or args.detect_all or detect_all_by_default

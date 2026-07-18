@@ -1,12 +1,16 @@
 names:
-- Weapon
-nc: 1
+- Grenade
+- Knife
+- Missile
+- Pistol
+- Rifle
+nc: 5
 roboflow:
   license: CC BY 4.0
-  project: weapon_detection_for_final
-  url: https://universe.roboflow.com/weapon-b3vyl/weapon_detection_for_final/dataset/4
-  version: 4
-  workspace: weapon-b3vyl
-test: /home/vix/Desktop/Projects/Detection-Project/weapon/test/images
-train: /home/vix/Desktop/Projects/Detection-Project/weapon/train/images
-val: /home/vix/Desktop/Projects/Detection-Project/weapon/valid/images
+  project: weapon-detection-f1lih-i39ne
+  url: https://app.roboflow.com/depars-workspace/weapon-detection-f1lih-i39ne/1
+  version: 1
+  workspace: depars-workspace
+test: /content/weapon-detection-1/test/images
+train: /content/weapon-detection-1/train/images
+val: /content/weapon-detection-1/valid/images
